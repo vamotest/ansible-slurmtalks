@@ -72,10 +72,11 @@
       }
       ```
       **curl:**
-    - ```bash curl -X POST http://localhost:8080/api/tweets \
-    -H "Authorization: Bearer <your_token>" \
-    -H "Content-Type: application/json" \
-    -d '{"text": "Hello, Twitter clone!", "userId": "1", "username": "<exampleuser>"}'
+    - ```
+      curl -X POST http://localhost:8080/api/tweets \
+      -H "Authorization: Bearer <your_token>" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "Hello, Twitter clone!", "userId": "1", "username": "<exampleuser>"}'
 
 - **GET /get-tweet/:tweetId**  
   URL: `http://localhost:8080/api/tweets/:tweetId`
