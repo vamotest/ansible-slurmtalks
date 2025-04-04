@@ -1,93 +1,192 @@
 # SlurmTalks
 
+# Frontend
+
+## Системная информация
+
+- ❗ ОСОБЕННОСТЬ СБОРКИ: приложение забирает переменные из ФАЙЛА .env, при подготовке образа для кубернетес необходимо
+  указать в `NEXT_PUBLIC_BACKEND_URL` URL бэкэнда **(не сервис внутри кубера, а внешний URL)**
+- приложение работает на порту 3000
+- `.env`
+    - `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080` - URL backend сервиса
+- для работы приложения требуется backend
+    - все что связано с постами требует коннекта к backend <-> redis
+    - все что связано с пользователями требует коннекта к backend <-> postgresql
+
+## Роуты
+
+### `/auth`
+
+- `/sign-up`- регистрация пользователя (далее редирект на `/sign-in`)
+    - *(для работы обязателен коннект бэкенда к postgresql)*
+- `/sign-in` - аутентификация пользователя  (далее редирект на `/`)
+    - *(для работы обязателен коннект бэкенда к postgresql)*
+
+### `/`
+
+- `/` - вывод всех постов
+    - *(для работы обязателен коннект бэкенда к redis)*
+- `/communities` - вывод списка пользователей
+    - *(для работы обязателен коннект бэкенда к postgresql)*
+- `/tweets/slurmed` - отсортированый вывод по возрастанию slurm всех постов
+    - *(для работы обязателен коннект бэкенда к redis)*
+- `/healthz` - health эндпоинт
+- `/readyz` - readyz эндпоинт
+
+# Backend
+
+## Системная информация
+- приложение работает на порту 8080
+- ❗ Redis должен работать на порту 6379
+- ❗ Postgres должен работать на порту 5432
+- `.env`
+    ```
+  POSTGRES_USER=postgres # CHANGE ON YOUR POSTGRES USERNAME
+  POSTGRES_PASSWORD= # CHANGE ON YOUR POSTGRES PASSWORD
+  POSTGRES_DB=postgres # CHANGE ON YOUR POSTGRES DATABASE
+  POSTGRES_HOST=localhost # CHANGE ON YOUR POSTGRES HOST
+  POSTGRES_PORT=5432 # CHANGE ON YOUR POSTGRES PORT
+  
+  REDIS_ADDR=localhost:6379  # CHANGE ON YOUR REDIS HOST:PORT
+  REDIS_PASSWORD= # CHANGE ON YOUR REDIS PASSWORD IF EXIST
+  REDIS_DB=0
+  
+  JWT_SECRET_KEY=your_secret_key
+  MIGRATE_IN_CODE=true # MIGRATION IN PGSQL IN CODE
+    ```  
+- для работы приложения требуется backend
+    - все что связано с постами требует коннекта к backend <-> redis
+    - все что связано с пользователями требует коннекта к backend <-> postgresql
+## API
 
 
-## Getting started
+- **POST /register**  
+  URL: `http://localhost:8080/api/register`  
+  **Body (raw JSON):**
+    ```
+    {
+        "username": "<username>",      // Замените <username> на имя пользователя
+        "email": "<email>",            // Замените <email> на email пользователя
+        "password": "<password>"       // Замените <password> на пароль пользователя
+    }
+    ```
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+  **сurl:**
+  ```bash
+  curl -X POST http://localhost:8080/api/register \
+    -H "Content-Type: application/json" \
+    -d '{"username": "exampleuser", "email": "example@example.com", "password": "examplepassword"}'
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- **POST /sign-in**  
+  URL: `http://localhost:8080/api/login`  
+  **Body (raw JSON):**
+    ```
+    {
+    "username": "<username>",      // Замените <username> на имя пользователя
+    "password": "<password>"       // Замените <password> на пароль пользователя
+    }
+    ```
 
-## Add your files
+  **curl:**
+  ```bash
+    curl -X POST http://localhost:8080/api/login \
+    -H "Content-Type: application/json" \
+    -d '{"username": "exampleuser", "password": "examplepassword"}'
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- **POST**  
+  URL: `http://localhost:8080/api/tweets`
+    - **Authorization: Bearer Token:**
+    - **Body (raw JSON):**
+      ```
+      {
+          "text": "<tweet_text>",          // Замените <tweet_text> на текст вашего твита
+          "userId": "<user_id>",           // Замените <user_id> на ID пользователя
+          "username": "<username>"         // Замените <username> на имя пользователя
+      }
+      ```
+      **curl:**
+    - ```bash curl -X POST http://localhost:8080/api/tweets \
+    -H "Authorization: Bearer <your_token>" \
+    -H "Content-Type: application/json" \
+    -d '{"text": "Hello, Twitter clone!", "userId": "1", "username": "<exampleuser>"}'
 
+- **GET /get-tweet/:tweetId**  
+  URL: `http://localhost:8080/api/tweets/:tweetId`
+    - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
+      **curl:**
+  ```bash 
+        curl http://localhost:8080/api/tweets/<tweet_id>
+
+- **GET /get-all-tweets**  
+  URL: `http://localhost:8080/api/tweets`
+  **curl:**
+  ```bash 
+        curl http://localhost:8080/api/tweets
+
+- **POST /like-tweet/:tweetId/like**  
+  URL: `http://localhost:8080/api/tweets/:tweetId/like`
+    - **Authorization: Bearer Token**
+    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
+        **curl:**
+    ```bash         
+      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/like \
+    -H "Authorization: Bearer <your_token>"
+- **POST /like-tweet/:tweetId/share**  
+  URL: `http://localhost:8080/api/tweets/:tweetId/share`
+    - **Authorization: Bearer Token**
+    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
+        **curl:**
+    ```bash         
+      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/share \
+    -H "Authorization: Bearer <your_token>"
+- **POST /like-tweet/:tweetId/slurm**  
+  URL: `http://localhost:8080/api/tweets/:tweetId/slurm`
+    - **Authorization: Bearer Token**
+    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
+        **curl:**
+    ```bash         
+      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/slurm \
+    -H "Authorization: Bearer <your_token>"
+- **GET  /api/tweets/sorted**  
+  URL: `http://localhost:8080/api/tweets/sorted`
+    - **Authorization: Bearer Token**
+      **curl:**
+    ```bash 
+  curl http://localhost:8080/api/tweets/sorted -H "Authorization: Bearer <your_token>"
+
+### users
+GET /community  
+URL: `http://localhost:8080/api/users`
+
+Пример команды curl:
+```bash
+curl http://localhost:8080/api/users
 ```
-cd existing_repo
-git remote add origin https://gitlab.slurm.io/edu/devops-cross-project/slurmtalks.git
-git branch -M main
-git push -uf origin main
+
+### probe
+GET /healthz  
+URL: `http://localhost:8080/healthz`  
+📕 Проба проходит после запуска сервиса
+
+Пример команды curl:
+```bash
+curl http://localhost:8080/healthz
 ```
 
-## Integrate with your tools
+GET /readyz  
+URL: `http://localhost:8080/readyz`  
+📕 Проба проходит после присоединения сервиса к базам данных
 
-- [ ] [Set up project integrations](https://gitlab.slurm.io/edu/devops-cross-project/slurmtalks/-/settings/integrations)
+Пример команды curl:
+```bash
+curl http://localhost:8080/readyz
+```
 
-## Collaborate with your team
+### metrics
+GET /metrics  
+URL: `http://localhost:8080/metrics`
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Пример команды curl:
+```bash
+curl http://localhost:8080/metrics
+```
