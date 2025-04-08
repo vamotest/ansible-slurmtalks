@@ -98,7 +98,7 @@ export default function SignUpPage() {
                     </div>
                     <div className="flex justify-between mx-auto gap-4 mt-5">
                         <Link href={'/'}
-                              className={'text-center w-full border text-white py-3 rounded-md hover:border-green-400 hover:text-white hover:bg-[#2BD28A]'}>
+                              className={'z-10 text-center w-full border text-white py-3 rounded-md hover:border-green-400 hover:text-white hover:bg-[#2BD28A]'}>
                             <button type="submit">
                                 Log in as a guest
                             </button>
