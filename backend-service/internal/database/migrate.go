@@ -11,5 +11,5 @@ func Migrate() {
 	if err != nil {
 		log.Println("[WARNING] Migration failed:", err)
 	}
-	fmt.Println("Database migrated successfully!")
+	fmt.Println("[SUCCESS] Database migrated successfully!")
 }

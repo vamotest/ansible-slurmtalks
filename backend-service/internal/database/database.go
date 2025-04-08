@@ -15,9 +15,9 @@ var DB *gorm.DB
 func InitPostgres() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found")
+		log.Println("[WARNING] No .env file found")
 	} else {
-		log.Println(".env file loaded successfully")
+		log.Println("[SUCCESS] .env file loaded successfully")
 	}
 
 	//fmt.Println("POSTGRES_HOST:", os.Getenv("POSTGRES_HOST"))
@@ -27,7 +27,7 @@ func InitPostgres() {
 	//fmt.Println("POSTGRES_PORT:", os.Getenv("POSTGRES_PORT"))
 
 	if os.Getenv("POSTGRES_HOST") == "" || os.Getenv("POSTGRES_PORT") == "" {
-		log.Fatal("Missing required environment variables!")
+		log.Fatal("[WARNING] Missing required environment variables!")
 	}
 	var dsn string
 	if os.Getenv("POSTGRES_PASSWORD") == "" {
