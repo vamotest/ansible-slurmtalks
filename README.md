@@ -5,10 +5,10 @@
 ## Системная информация
 
 - ❗ ОСОБЕННОСТЬ СБОРКИ: приложение забирает переменные из ФАЙЛА .env, при подготовке образа для докер/кубернетес необходимо
-  указать в `NEXT_PUBLIC_BACKEND_URL` URL бэкэнда **(не сервис внутри кубера/стенда, а внешний URL пример: `https://slurm-talks-back.sXXXXXX.edu.slurm.io`)**
+  указать в `NEXT_PUBLIC_BACKEND_URL` URL бэкэнда **(не сервис внутри кубера/стенда, а внешний URL пример: `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)**
 - приложение работает на порту 3000
 - `.env`
-    - `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080` - URL backend сервиса (при работе на стедне заменить на `https://slurm-talks-back.sXXXXXX.edu.slurm.io`)
+    - `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080` - URL backend сервиса (при работе на стедне заменить на `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)
 - для работы приложения требуется backend
     - все что связано с постами требует коннекта к backend <-> redis
     - все что связано с пользователями требует коннекта к backend <-> postgresql
