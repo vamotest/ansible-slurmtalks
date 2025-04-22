@@ -6,6 +6,9 @@
 
 - ❗ ОСОБЕННОСТЬ СБОРКИ: приложение забирает переменные из ФАЙЛА .env, при подготовке образа для докер/кубернетес необходимо
   указать в `NEXT_PUBLIC_BACKEND_URL` URL бэкэнда **(не сервис внутри кубера/стенда, а внешний URL пример: `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)**
+- ❗️ ОСОБЕННОСТЬ РАБОТЫ СО СТЕНДАМИ: 
+    - порт по которому приложение должно быть доступно `3000` (user <-> slurm-proxy *[http://slurm-talks-front.sXXXXXX.edu.slurm.io]* <-> контейнер доступный по 3000 порту)
+    - приложение доступно по http://slurm-talks-front.sXXXXXX.edu.slurm.io (sXXXXXX - номер студента)  
 - приложение работает на порту 3000
 - `.env`
     - `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080` - URL backend сервиса (при работе на стедне заменить на `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)
@@ -37,6 +40,9 @@
 
 ## Системная информация
 - приложение работает на порту 8080
+- ❗️ ОСОБЕННОСТЬ РАБОТЫ СО СТЕНДАМИ: 
+    - порт по которому приложение должно быть доступно `8080` (user <-> slurm-proxy *[http://slurm-talks-back.sXXXXXX.edu.slurm.io]* <-> контейнер доступный по 8080 порту)
+    - приложение доступно по http://slurm-talks-back.sXXXXXX.edu.slurm.io(sXXXXXX - номер студента) 
 - ❗ Redis должен работать на порту 6379
 - ❗ Postgres должен работать на порту 5432
 - `.env`
