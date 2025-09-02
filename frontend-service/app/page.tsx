@@ -72,7 +72,7 @@ export default function Home() {
             if (!response.ok) throw new Error("Ошибка отправки твита");
 
             const newTweet = await response.json();
-            setTweets([newTweet, ...tweets]); // Добавляем новый твит в начало списка
+            setTweets(prevTweets => [newTweet, ...(prevTweets || [])]); // Добавляем новый твит в начало списка
             setDataSending(!dataSending)
             setTweetText(""); // Очищаем инпут
         } catch (error) {
@@ -136,6 +136,12 @@ export default function Home() {
                                             className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-auto placeholder:text-[#bbc4ce] rounded-l-none border-l-0  pr-16 rounded-b-none border-b-0 text-base font-normal leading-normal pt-[22px]"
                                             value={tweetText}
                                             onChange={(e) => setTweetText(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    void handleTweetSubmit();
+                                                }
+                                            }}
                                         ></textarea>
                                             <div
                                                 className="flex border border-[#dce0e5] bg-white justify-end pr-[15px] rounded-br-xl border-l-0 border-t-0 px-[15px] pb-[15px]">
