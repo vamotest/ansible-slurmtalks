@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log"
 	"sitter/internal/models"
 )
@@ -11,5 +10,5 @@ func Migrate() {
 	if err != nil {
 		log.Println("[WARNING] Migration failed:", err)
 	}
-	fmt.Println("[SUCCESS] Database migrated successfully!")
+	log.Println("[SUCCESS] Database migrated successfully!")
 }

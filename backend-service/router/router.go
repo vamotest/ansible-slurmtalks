@@ -5,7 +5,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
@@ -13,33 +12,6 @@ import (
 	"sitter/internal/database/redisclient"
 	"sitter/internal/handlers"
 	"sitter/internal/metrics"
-)
-
-// Метрики Prometheus
-var (
-	httpRequestsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Общее количество HTTP-запросов",
-		},
-		[]string{"path", "method"},
-	)
-
-	httpRequestDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
-			Help:    "Длительность HTTP-запросов",
-			Buckets: prometheus.DefBuckets,
-		},
-		[]string{"path", "method"},
-	)
-
-	redisRequestsTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "redis_requests_total",
-			Help: "Общее количество запросов к Redis",
-		},
-	)
 )
 
 // Функция для Liveness Probe (просто проверка, что сервер жив)
@@ -80,19 +52,6 @@ func readinessCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ready"})
 }
 
-// Middleware для сбора метрик
-func prometheusMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		path := c.FullPath()
-		method := c.Request.Method
-
-		c.Next()
-
-		// Отслеживаем количество запросов для каждого пути и метода
-		metrics.HttpRequestsTotal.WithLabelValues(path, method).Inc() // Общее количество запросов
-	}
-}
-
 func SetupRouter() *gin.Engine {
 
 	r := gin.Default()
@@ -102,6 +61,7 @@ func SetupRouter() *gin.Engine {
 		AllowHeaders:  []string{"Origin", "Content-Type", "Authorization"}, // Разрешаем необходимые заголовки
 		ExposeHeaders: []string{"Content-Length"},
 	}))
+	r.Use(metrics.MetricsMiddleware())
 	api := r.Group("/api")
 	{
 		api.Use(func(c *gin.Context) {
@@ -120,9 +80,6 @@ func SetupRouter() *gin.Engine {
 		api.POST("/tweets/:id/share", handlers.ShareTweet)
 		api.POST("/tweets/:id/slurm", handlers.SlurmTweet)
 		api.GET("/tweets/sorted", handlers.GetSortedTweets)
-
-		// Подключаем middleware Prometheus
-		r.Use(prometheusMiddleware())
 
 		// Добавляем маршруты для Liveness, Readiness и метрик
 		r.GET("/healthz", livenessCheck)
