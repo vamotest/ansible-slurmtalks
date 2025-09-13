@@ -59,6 +59,13 @@
   
   JWT_SECRET_KEY=your_secret_key
   MIGRATE_IN_CODE=true # MIGRATION IN PGSQL IN CODE (RECOMMEND DISABLED IN KUBERNETES MODULE AND USE `sql/users.sql` AS JOB)
+  SIMULATED_METRICS=false        # ENABLE OR DISABLE FAKE METRICS SIMULATION (true = enabled, false = disabled)
+  
+  # SIMULATED_METRICS
+  SIMULATED_METRICS_INTERVAL=1m  # SET TIME INTERVAL BETWEEN METRIC CYCLES (example: 1s, 1m, 1h)
+  SIMULATED_METRICS_TWEETS=10    # MAX NUMBER OF TWEETS TO CREATE
+  SIMULATED_METRICS_USERS=10     # MAX NUMBER OF USERS TO CREATE
+
     ```  
 - для работы приложения требуется backend
     - все что связано с постами требует коннекта к backend <-> redis
