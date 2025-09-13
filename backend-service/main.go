@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
+	"sitter/internal/metrics"
 	"strconv"
 	"strings"
 
@@ -34,8 +34,10 @@ func main() {
 	if allowMigrate {
 		database.Migrate()
 	} else {
-		fmt.Println("[WARNING] MIGRATE_IN_CODE WAS SKIPPED. WATCH ENV -> MIGRATE_IN_CODE")
+		log.Println("[WARNING] MIGRATE_IN_CODE WAS SKIPPED. WATCH ENV -> MIGRATE_IN_CODE")
 	}
+
+	metrics.SimulatedMetrics()
 
 	// Получаем настройки Redis из env
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -62,6 +64,6 @@ func main() {
 	}))
 
 	// Запуск сервера
-	fmt.Println("Server is running on port 8080...")
+	log.Println("Server is running on port 8080...")
 	r.Run(":8080")
 }
