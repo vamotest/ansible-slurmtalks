@@ -35,14 +35,14 @@ export default function CommunityPage() {
                     <div className="bg-white p-4 rounded-lg shadow">
                         <ul>
                             {
-                                users.length > 0 ? (
+                                users?.length > 0 ? (
                                     users.map(user => (
                                         <li key={user.id} className="p-3 border-b last:border-b-0">
                                             <p className="text-lg text-black font-semibold">{user.username}</p>
                                             <p className="text-sm text-gray-500">Зарегистрирован: {new Date(user.created_at).toLocaleDateString()}</p>
                                         </li>
                                     ))
-                                ) : 'Произошла ошибка, подробнее смотрите в консоли'
+                                ) : 'Произошла ошибка, подробнее смотрите в "Network"'
                             }
                         </ul>
                     </div>
