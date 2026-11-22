@@ -1,0 +1,15 @@
+[Unit]
+Description=SlurmTalks Go Backend Service
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/slurmtalks/backend-service
+ExecStart=/usr/local/go/bin/go run /opt/slurmtalks/backend-service/main.go
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/slurmtalks/backend-service/.env
+
+[Install]
+WantedBy=multi-user.target
