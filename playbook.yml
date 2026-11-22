@@ -4,3 +4,10 @@
   become: true
   roles:
     - common
+
+- name: "Deploy Databases and Backend service"
+  hosts: backend_hosts
+  become: true
+  roles:
+    - postgresql
+    - redis
