@@ -1,0 +1,13 @@
+stages:
+  - deploy
+
+deploy_infrastructure:
+  stage: deploy
+  tags:
+    - ansible
+  only:
+    - s085906
+  before_script:
+    - ansible --version
+  script:
+    - ansible-playbook -i hosts.ini playbook.yml -e "postgres_password=${POSTGRES_PASSWORD}"
