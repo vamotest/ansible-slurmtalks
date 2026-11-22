@@ -1,0 +1,56 @@
+---
+- name: "Check if Node.js is already installed"
+  ansible.builtin.command: node -v
+  register: node_check
+  failed_when: false
+  changed_when: false
+
+- name: "Add NodeSource repository for Node.js 22.x"
+  ansible.builtin.shell: "curl -fsSL https://deb.nodesource.com/setup_22.x | bash -"
+  when: node_check.rc != 0
+
+- name: "Install Node.js"
+  ansible.builtin.apt:
+    name: nodejs
+    state: present
+
+- name: "Clone slurmtalks repository"
+  ansible.builtin.git:
+    repo: "git@gitlab.slurm.io:edu/devops-cross-project/slurmtalks.git"
+    dest: /opt/slurmtalks
+    version: main
+    force: true
+    accept_hostkey: true
+
+- name: "Deploy frontend .env configuration"
+  ansible.builtin.template:
+    src: env.j2
+    dest: /opt/slurmtalks/frontend-service/.env
+    mode: "0644"
+
+- name: "Install frontend dependencies (npm install)"
+  ansible.builtin.command: npm install
+  args:
+    chdir: /opt/slurmtalks/frontend-service
+  register: npm_install_result
+  changed_when: "'added' in npm_install_result.stdout or 'audited' in npm_install_result.stdout"
+
+- name: "Build Next.js application (npm run build)"
+  ansible.builtin.command: npm run build
+  args:
+    chdir: /opt/slurmtalks/frontend-service
+  notify: Restart frontend
+
+- name: "Create systemd unit for frontend"
+  ansible.builtin.template:
+    src: frontend.service.j2
+    dest: /etc/systemd/system/frontend.service
+    mode: "0644"
+  notify: Restart frontend
+
+- name: "Ensure frontend service is running and enabled"
+  ansible.builtin.systemd:
+    name: frontend
+    state: started
+    enabled: true
+    daemon_reload: true

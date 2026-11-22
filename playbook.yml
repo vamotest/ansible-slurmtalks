@@ -12,3 +12,9 @@
     - postgresql
     - redis
     - backend
+
+- name: "Deploy Frontend service"
+  hosts: frontend_hosts
+  become: true
+  roles:
+    - frontend

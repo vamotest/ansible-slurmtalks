@@ -1,0 +1,15 @@
+[Unit]
+Description=SlurmTalks Next.js Frontend Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/slurmtalks/frontend-service
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/slurmtalks/frontend-service/.env
+
+[Install]
+WantedBy=multi-user.target

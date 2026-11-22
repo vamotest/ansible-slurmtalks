@@ -1,0 +1,6 @@
+---
+- name: Restart frontend
+  ansible.builtin.systemd:
+    name: frontend
+    state: restarted
+    daemon_reload: true
