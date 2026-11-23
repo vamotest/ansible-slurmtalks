@@ -1,206 +1,110 @@
-# SlurmTalks
+# SlurmTalks Multi-Tier Infrastructure & Deployment Automation with Ansible
 
-# Frontend
+Automated end-to-end infrastructure provisioning and multi-tier application deployment for **SlurmTalks** (a micro-blogging social platform) across distributed virtual machines using **Ansible**.
 
-## Системная информация
+---
 
-- ❗ ОСОБЕННОСТЬ СБОРКИ: приложение забирает переменные из ФАЙЛА .env, при подготовке образа для докер/кубернетес необходимо
-  указать в `NEXT_PUBLIC_BACKEND_URL` URL бэкэнда **(не сервис внутри кубера/стенда, а внешний URL пример: `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)**
-- ❗️ ОСОБЕННОСТЬ РАБОТЫ СО СТЕНДАМИ: 
-    - порт по которому приложение должно быть доступно `3000` (user <-> slurm-proxy *[http://slurm-talks-front.sXXXXXX.edu.slurm.io]* <-> контейнер доступный по 3000 порту)
-    - приложение доступно по http://slurm-talks-front.sXXXXXX.edu.slurm.io (sXXXXXX - номер студента)  
-- приложение работает на порту 3000
-- `.env`
-    - `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080` - URL backend сервиса (при работе на стедне заменить на `http://slurm-talks-back.sXXXXXX.edu.slurm.io`)
-- для работы приложения требуется backend
-    - все что связано с постами требует коннекта к backend <-> redis
-    - все что связано с пользователями требует коннекта к backend <-> postgresql
+## Architecture Overview
 
-## Роуты
+The platform is a decoupled multi-tier environment hosted on dedicated nodes:
 
-### `/auth`
+| Host   | Node Role           | OS           | Components & Responsibilities                                                                            | Ports  |
+| :----- | :------------------ | :----------- | :------------------------------------------------------------------------------------------------------- | :----- |
+| `vs01` | Control Node        | Ubuntu 22.04 | Central Ansible node. Runs playbooks, manages the inventory, and provisions remote targets.              | —      |
+| `vs02` | Frontend Node       | Ubuntu 22.04 | Next.js web interface (Node.js LTS). The browser calls the backend via `NEXT_PUBLIC_BACKEND_URL`.        | `3000` |
+| `vs03` | Backend & Data Node | Ubuntu 22.04 | Go REST API (Gin), PostgreSQL 14 (user identity and authentication), and Redis 7 (tweets and counters).  | `8080` |
 
-- `/sign-up`- регистрация пользователя (далее редирект на `/sign-in`)
-    - *(для работы обязателен коннект бэкенда к postgresql)*
-- `/sign-in` - аутентификация пользователя  (далее редирект на `/`)
-    - *(для работы обязателен коннект бэкенда к postgresql)*
+Traffic is routed by a reverse proxy: `slurm-talks-front.s085906.edu.slurm.io:80` forwards to `vs02:3000`, and `slurm-talks-back.s085906.edu.slurm.io:80` forwards to `vs03:8080`.
+PostgreSQL and Redis listen on their default ports and are reachable only locally on `vs03`.
 
-### `/`
-
-- `/` - вывод всех постов
-    - *(для работы обязателен коннект бэкенда к redis)*
-- `/communities` - вывод списка пользователей
-    - *(для работы обязателен коннект бэкенда к postgresql)*
-- `/tweets/slurmed` - отсортированый вывод по возрастанию slurm всех постов
-    - *(для работы обязателен коннект бэкенда к redis)*
-- `/healthz` - health эндпоинт
-- `/readyz` - readyz эндпоинт
-
-# Backend
-
-## Системная информация
-- приложение работает на порту 8080
-- ❗️ ОСОБЕННОСТЬ РАБОТЫ СО СТЕНДАМИ: 
-    - порт по которому приложение должно быть доступно `8080` (user <-> slurm-proxy *[http://slurm-talks-back.sXXXXXX.edu.slurm.io]* <-> контейнер доступный по 8080 порту)
-    - приложение доступно по http://slurm-talks-back.sXXXXXX.edu.slurm.io(sXXXXXX - номер студента) 
-- ❗ Redis должен работать на порту 6379
-- ❗ Postgres должен работать на порту 5432
-- `.env`
-    ```
-  POSTGRES_USER=postgres # CHANGE ON YOUR POSTGRES USERNAME
-  POSTGRES_PASSWORD= # CHANGE ON YOUR POSTGRES PASSWORD
-  POSTGRES_DB=postgres # CHANGE ON YOUR POSTGRES DATABASE
-  POSTGRES_HOST=localhost # CHANGE ON YOUR POSTGRES HOST
-  POSTGRES_PORT=5432 # CHANGE ON YOUR POSTGRES PORT
-  
-  REDIS_ADDR=localhost:6379  # CHANGE ON YOUR REDIS HOST:PORT
-  REDIS_PASSWORD= # CHANGE ON YOUR REDIS PASSWORD IF EXIST
-  REDIS_DB=0
-  
-  JWT_SECRET_KEY=your_secret_key
-  MIGRATE_IN_CODE=true # MIGRATION IN PGSQL IN CODE (RECOMMEND DISABLED IN KUBERNETES MODULE AND USE `sql/users.sql` AS JOB)
-  SIMULATED_METRICS=false        # ENABLE OR DISABLE FAKE METRICS SIMULATION (true = enabled, false = disabled)
-  
-  # SIMULATED_METRICS
-  SIMULATED_METRICS_INTERVAL=1m  # SET TIME INTERVAL BETWEEN METRIC CYCLES (example: 1s, 1m, 1h)
-  SIMULATED_METRICS_TWEETS=10    # MAX NUMBER OF TWEETS TO CREATE
-  SIMULATED_METRICS_USERS=10     # MAX NUMBER OF USERS TO CREATE
-
-    ```  
-- для работы приложения требуется backend
-    - все что связано с постами требует коннекта к backend <-> redis
-    - все что связано с пользователями требует коннекта к backend <-> postgresql
-## API
-
-
-- **POST /register**  
-  URL: `http://localhost:8080/api/register`  
-  **Body (raw JSON):**
-    ```
-    {
-        "username": "<username>",      // Замените <username> на имя пользователя
-        "email": "<email>",            // Замените <email> на email пользователя
-        "password": "<password>"       // Замените <password> на пароль пользователя
-    }
-    ```
-
-  **сurl:**
-  ```bash
-  curl -X POST http://localhost:8080/api/register \
-    -H "Content-Type: application/json" \
-    -d '{"username": "exampleuser", "email": "example@example.com", "password": "examplepassword"}'
-
-- **POST /sign-in**  
-  URL: `http://localhost:8080/api/login`  
-  **Body (raw JSON):**
-    ```
-    {
-    "username": "<username>",      // Замените <username> на имя пользователя
-    "password": "<password>"       // Замените <password> на пароль пользователя
-    }
-    ```
-
-  **curl:**
-  ```bash
-    curl -X POST http://localhost:8080/api/login \
-    -H "Content-Type: application/json" \
-    -d '{"username": "exampleuser", "password": "examplepassword"}'
-
-- **POST**  
-  URL: `http://localhost:8080/api/tweets`
-    - **Authorization: Bearer Token:**
-    - **Body (raw JSON):**
-      ```
-      {
-          "text": "<tweet_text>",          // Замените <tweet_text> на текст вашего твита
-          "userId": "<user_id>",           // Замените <user_id> на ID пользователя
-          "username": "<username>"         // Замените <username> на имя пользователя
-      }
-      ```
-      **curl:**
-    - ```bash 
-      curl -X POST http://localhost:8080/api/tweets \
-      -H "Authorization: Bearer <your_token>" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "Hello, Twitter clone!", "userId": "1", "username": "<exampleuser>"}'
-
-- **GET /get-tweet/:tweetId**  
-  URL: `http://localhost:8080/api/tweets/:tweetId`
-    - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
-      **curl:**
-  ```bash 
-        curl http://localhost:8080/api/tweets/<tweet_id>
-
-- **GET /get-all-tweets**  
-  URL: `http://localhost:8080/api/tweets`
-  **curl:**
-  ```bash 
-        curl http://localhost:8080/api/tweets
-
-- **POST /like-tweet/:tweetId/like**  
-  URL: `http://localhost:8080/api/tweets/:tweetId/like`
-    - **Authorization: Bearer Token**
-    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
-        **curl:**
-    ```bash         
-      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/like \
-    -H "Authorization: Bearer <your_token>"
-- **POST /like-tweet/:tweetId/share**  
-  URL: `http://localhost:8080/api/tweets/:tweetId/share`
-    - **Authorization: Bearer Token**
-    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
-        **curl:**
-    ```bash         
-      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/share \
-    -H "Authorization: Bearer <your_token>"
-- **POST /like-tweet/:tweetId/slurm**  
-  URL: `http://localhost:8080/api/tweets/:tweetId/slurm`
-    - **Authorization: Bearer Token**
-    - - **`tweetId=<tweet_id>` // Замените `<tweet_id>` на ID твита**
-        **curl:**
-    ```bash         
-      curl -X POST http://localhost:8080/api/tweets/<tweet_id>/slurm \
-    -H "Authorization: Bearer <your_token>"
-- **GET  /api/tweets/sorted**  
-  URL: `http://localhost:8080/api/tweets/sorted`
-    - **Authorization: Bearer Token**
-      **curl:**
-    ```bash 
-  curl http://localhost:8080/api/tweets/sorted -H "Authorization: Bearer <your_token>"
-
-### users
-GET /community  
-URL: `http://localhost:8080/api/users`
-
-Пример команды curl:
-```bash
-curl http://localhost:8080/api/users
+```text
+        [ Client Browser ]
+                |
+                | HTTP :80
+                v
+      +-------------------+
+      |   Reverse Proxy   |
+      +----+---------+----+
+           |         |
+    :3000  |         |  :8080
+           v         v
+  +-----------------+   +-----------------+
+  | vs02 (Frontend) |   | vs03 (Backend)  |
+  |     Next.js     |   |    Go (Gin)     |
+  +-----------------+   +--------+--------+
+                                 |
+                        +--------+--------+
+                        v                 v
+                   [PostgreSQL]        [Redis]
 ```
 
-### probe
-GET /healthz  
-URL: `http://localhost:8080/healthz`  
-📕 Проба проходит после запуска сервиса
+## Key Implementation Details
 
-Пример команды curl:
-```bash
-curl http://localhost:8080/healthz
+### Modular Ansible Roles
+
+- `common`: Updates the APT cache and installs base system packages on all targets.
+- `postgresql`: Installs PostgreSQL 14, enables the service, and sets the credentials for the application database.
+- `redis`: Installs Redis, enables the service, and keeps it bound locally.
+- `backend`: Installs the Go runtime (1.24.0), clones the source repository, templates the runtime `.env` file, and creates the `backend.service` systemd unit.
+- `frontend`: Installs Node.js LTS, clones the source repository, injects the public backend URL (`NEXT_PUBLIC_BACKEND_URL`), runs the production build (`npm run build`), and manages the app through `frontend.service`.
+
+### Token-Based Git Synchronization
+
+The backend and frontend roles clone the repository over HTTPS with a GitLab Personal Access Token (`oauth2:{{ gitlab_token }}`). This removes manual code deployment and avoids distributing private SSH keys to the managed hosts.
+
+### Idempotency & Process Management
+
+Systemd unit templates and dedicated Ansible handlers restart services only when their configuration or code changes.
+
+## Prerequisites
+
+- SSH access from the Control Node (`vs01`) to the managed hosts (`vs02.s085906`, `vs03.s085906`).
+- Ansible installed on `vs01`.
+- A GitLab Personal Access Token (`glpat-...`) with the `read_repository` scope.
+
+## Inventory Configuration
+
+The host configuration is stored in `hosts.ini`:
+
+```ini
+[backend_hosts]
+vs03 ansible_host=vs03.s085906 postgres_host=localhost
+
+[frontend_hosts]
+vs02 ansible_host=vs02.s085906 NEXT_PUBLIC_BACKEND_URL=http://slurm-talks-back.s085906.edu.slurm.io
 ```
 
-GET /readyz  
-URL: `http://localhost:8080/readyz`  
-📕 Проба проходит после присоединения сервиса к базам данных
+## Execution & Deployment
 
-Пример команды curl:
+Run the full provisioning workflow from the Control Node (`vs01`):
+
 ```bash
-curl http://localhost:8080/readyz
+ansible-playbook -i hosts.ini playbook.yml \
+  -e "postgres_password=your_secure_db_password" \
+  -e "gitlab_token=glpat-your_personal_access_token"
 ```
 
-### metrics
-GET /metrics  
-URL: `http://localhost:8080/metrics`
+To deploy a single tier, add `--limit backend_hosts` or `--limit frontend_hosts` to the command above.
 
-Пример команды curl:
+## Validation & Health Checks
+
+Verify service status and API connectivity from `vs01`:
+
 ```bash
-curl http://localhost:8080/metrics
+# Backend health
+curl -i http://vs03.s085906:8080/healthz
+
+# Backend readiness (PostgreSQL + Redis)
+curl -i http://vs03.s085906:8080/readyz
+
+# Query tweets via the REST API
+curl -i http://vs03.s085906:8080/api/tweets
+
+# Frontend probe
+curl -i http://vs02.s085906:3000/readyz
 ```
+
+## Application URLs
+
+- Frontend Web UI: http://slurm-talks-front.s085906.edu.slurm.io
+- Backend API: http://slurm-talks-back.s085906.edu.slurm.io
