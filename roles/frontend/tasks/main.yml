@@ -16,11 +16,12 @@
 
 - name: "Clone slurmtalks repository"
   ansible.builtin.git:
-    repo: "git@gitlab.slurm.io:edu/devops-cross-project/slurmtalks.git"
+    repo: "https://oauth2:{{ gitlab_token }}@gitlab.slurm.io/devops-upgrade-cross-projects/s085906/slurmtalks.git"
     dest: /opt/slurmtalks
-    version: main
+    version: s085906
     force: true
-    accept_hostkey: true
+  register: git_clone
+  notify: Restart frontend
 
 - name: "Deploy frontend .env configuration"
   ansible.builtin.template:
