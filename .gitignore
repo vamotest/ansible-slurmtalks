@@ -1,0 +1,59 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Next.js cache
+.next/cache/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Go build artifacts
+backend-service/*.exe
+backend-service/*.exe~
+backend-service/*.dll
+backend-service/*.so
+backend-service/*.dylib
+backend-service/main
+
+# Go test coverage
+*.out
+coverage.html
+
+# Ansible
+*.retry
+.vault_pass
+vault_password.txt
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+.*.swp
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
